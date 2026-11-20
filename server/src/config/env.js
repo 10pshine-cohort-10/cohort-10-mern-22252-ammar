@@ -1,4 +1,20 @@
+// @ts-check
 import dotenv from "dotenv";
+
+/** @typedef {"development" | "production" | "test" | (string & {})} NodeEnvironment */
+/**
+ * @typedef {object} EnvironmentConfig
+ * @property {number} PORT
+ * @property {NodeEnvironment} NODE_ENV
+ * @property {string} MONGODB_URI
+ * @property {string} JWT_SECRET
+ * @property {string} JWT_EXPIRES_IN
+ * @property {string} CLIENT_URL
+ * @property {string} COOKIE_SECRET
+ * @property {boolean} isProduction
+ * @property {boolean} isDevelopment
+ * @property {boolean} isTest
+ */
 
 dotenv.config();
 
@@ -6,12 +22,14 @@ const requiredEnvVars = ["JWT_SECRET"];
 
 for (const envVar of requiredEnvVars) {
   if (!process.env[envVar]) {
-    console.warn(`[Config Warning]: Environment variable ${envVar} is not defined. Using default fallback for development.`);
+    console.warn("[Config Warning]: Environment variable " + envVar + " is not defined. Using default fallback for development.");
   }
 }
 
+/** @type {NodeEnvironment} */
 const NODE_ENV = (process.env.NODE_ENV || "development").toLowerCase();
 
+/** @type {EnvironmentConfig} */
 export const env = {
   PORT: parseInt(process.env.PORT || "5000", 10),
   NODE_ENV,
@@ -24,4 +42,3 @@ export const env = {
   isDevelopment: NODE_ENV === "development",
   isTest: NODE_ENV === "test",
 };
-

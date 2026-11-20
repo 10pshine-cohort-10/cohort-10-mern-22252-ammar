@@ -1,3 +1,4 @@
+// @ts-check
 import http from "http";
 import app from "./app.js";
 import { env } from "./config/env.js";
@@ -19,6 +20,10 @@ const startServer = async () => {
   }
 };
 
+/** @typedef {"SIGINT" | "SIGTERM"} ShutdownSignal */
+/** @typedef {(signal: ShutdownSignal) => void} ShutdownHandler */
+
+/** @type {ShutdownHandler} */
 const gracefulShutdown = (signal) => {
   logger.info("Received " + signal + ". Shutting down gracefully...");
   server.close(() => {
