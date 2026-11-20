@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Mail,
   Lock,
@@ -30,29 +30,34 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const pendingRef = useRef(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (pendingRef.current || isLoading) return;
+    pendingRef.current = true;
     setIsLoading(true);
-
-    setTimeout(() => {
-      setAuth(
-        {
-          id: "user-1",
-          name: name.trim() || "Ammara Zahid",
-          email: email.trim() || "ammar@example.com",
-          role: "Standard User",
-          avatarUrl:
-            "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
-          memberSince: "Nov 10, 2025",
-          status: "Active",
-        },
-        "jwt-dummy-token"
-      );
+    timerRef.current = window.setTimeout(() => {
+      setAuth({
+        id: "user-1",
+        name: name.trim() || "Ammara Zahid",
+        email: email.trim() || "ammar@example.com",
+        role: "Standard User",
+        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
+        memberSince: "Nov 10, 2025",
+        status: "Active",
+      }, "jwt-dummy-token");
+      timerRef.current = null;
+      pendingRef.current = false;
       setIsLoading(false);
       navigate("/dashboard");
     }, 400);
   };
+
+  useEffect(() => () => {
+    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+  }, []);
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#090c1f] p-4 sm:p-8 font-['Plus_Jakarta_Sans',sans-serif]">
@@ -208,6 +213,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
@@ -236,7 +242,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     href="#forgot"
                     onClick={(e) => {
                       e.preventDefault();
-                      window.alert("Password reset instructions sent to your email!");
+                      window.alert("Password recovery is not available yet.");
                     }}
                     className="text-[#5850ec] hover:underline font-semibold"
                   >
@@ -268,7 +274,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {/* Continue with Google */}
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => {
+                  if (pendingRef.current || isLoading) return;
                   setAuth(
                     {
                       id: "google-user",

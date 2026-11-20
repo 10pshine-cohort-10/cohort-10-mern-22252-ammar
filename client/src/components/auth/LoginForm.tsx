@@ -30,8 +30,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1">
-            <label className="text-sm font-medium">Email address</label>
+            <label htmlFor="login-email" className="text-sm font-medium">Email address</label>
             <Input
+              id="login-email"
               type="email"
               placeholder="name@example.com"
               {...register("email")}
@@ -42,8 +43,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading }) => 
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-medium">Password</label>
+            <label htmlFor="login-password" className="text-sm font-medium">Password</label>
             <Input
+              id="login-password"
               type="password"
               placeholder="••••••••"
               {...register("password")}

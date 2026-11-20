@@ -10,31 +10,24 @@ interface AuthState {
   logout: () => void;
 }
 
-const defaultUser: User = {
-  id: "user-1",
-  name: "Ammara Zahid",
-  email: "ammar@example.com",
-  role: "Standard User",
-  avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
-  memberSince: "Nov 10, 2025",
-  status: "Active",
-};
-
 export const useAuthStore = create<AuthState>((set) => ({
-  user: defaultUser,
-  token: typeof window !== "undefined" ? (localStorage.getItem("auth_token") || "demo-token") : "demo-token",
-  isAuthenticated: true,
+  user: null,
+  token: null,
+  isAuthenticated: false,
   setAuth: (user: User, token: string) => {
-    localStorage.setItem("auth_token", token);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("auth_token", token);
+    }
     set({ user, token, isAuthenticated: true });
   },
-  updateUser: (data) => {
+  updateUser: (data) =>
     set((state) => ({
       user: state.user ? { ...state.user, ...data } : null,
-    }));
-  },
+    })),
   logout: () => {
-    localStorage.removeItem("auth_token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+    }
     set({ user: null, token: null, isAuthenticated: false });
   },
 }));

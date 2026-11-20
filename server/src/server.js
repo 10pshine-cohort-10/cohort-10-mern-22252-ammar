@@ -19,12 +19,19 @@ const startServer = async () => {
   }
 };
 
-const gracefulShutdown = async (signal) => {
-  logger.info(`Received ${signal}. Shutting down gracefully...`);
-  server.close(async () => {
-    logger.info("HTTP server closed.");
-    await disconnectDatabase();
-    process.exit(0);
+const gracefulShutdown = (signal) => {
+  logger.info("Received " + signal + ". Shutting down gracefully...");
+  server.close(() => {
+    void (async () => {
+      try {
+        logger.info("HTTP server closed.");
+        await disconnectDatabase();
+        process.exit(0);
+      } catch (error) {
+        logger.error("Error during graceful shutdown: " + error.message);
+        process.exit(1);
+      }
+    })();
   });
 };
 

@@ -101,6 +101,11 @@ COOKIE_SECRET=replace_with_a_long_random_secret
 
 ## 🚀 Running the Project
 
+Install dependencies for both packages from the repository root before starting the app:
+
+- npm --prefix client install
+- npm --prefix server install
+
 ```bash
 # Start Frontend (http://localhost:5173)
 npm run client:dev
