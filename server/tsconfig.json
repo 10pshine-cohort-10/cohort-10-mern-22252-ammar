@@ -9,7 +9,8 @@
     "skipLibCheck": true,
     "types": [
       "node"
-    ]
+    ],
+    "strict": true
   },
   "include": [
     "src/config/env.js",

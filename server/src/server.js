@@ -15,7 +15,7 @@ const startServer = async () => {
       logger.info(`Notes App Server running in ${env.NODE_ENV} mode on port ${env.PORT}`);
     });
   } catch (error) {
-    logger.error(`Failed to start server: ${error.message}`);
+    logger.error("Failed to start server: " + (error instanceof Error ? error.message : String(error)));
     process.exit(1);
   }
 };
@@ -33,7 +33,7 @@ const gracefulShutdown = (signal) => {
         await disconnectDatabase();
         process.exit(0);
       } catch (error) {
-        logger.error("Error during graceful shutdown: " + error.message);
+        logger.error("Error during graceful shutdown: " + (error instanceof Error ? error.message : String(error)));
         process.exit(1);
       }
     })();
