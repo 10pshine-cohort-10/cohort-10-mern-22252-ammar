@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -8,9 +8,14 @@ import {
   ArrowRight,
   User as UserIcon,
   Edit3,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/authStore";
+import { authService } from "@/services/auth/authService";
 import { cn } from "@/utils";
+import axios from "axios";
 
 interface AuthScreenProps {
   initialMode?: "login" | "register";
@@ -30,34 +35,81 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const timerRef = useRef<number | null>(null);
-  const pendingRef = useRef(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (pendingRef.current || isLoading) return;
-    pendingRef.current = true;
-    setIsLoading(true);
-    timerRef.current = window.setTimeout(() => {
-      setAuth({
-        id: "user-1",
-        name: name.trim() || "Ammara Zahid",
-        email: email.trim() || "ammar@example.com",
-        role: "Standard User",
-        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
-        memberSince: "Nov 10, 2025",
-        status: "Active",
-      }, "jwt-dummy-token");
-      timerRef.current = null;
-      pendingRef.current = false;
-      setIsLoading(false);
-      navigate("/dashboard");
-    }, 400);
+  // Password validation checks
+  const hasMinLength = password.length >= 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[^A-Za-z0-9]/.test(password);
+  const isPasswordValid = hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial;
+
+  const switchMode = (newMode: "login" | "register") => {
+    setMode(newMode);
+    setErrorMessage(null);
+    setSuccessMessage(null);
   };
 
-  useEffect(() => () => {
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-  }, []);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isLoading) return;
+
+    setErrorMessage(null);
+    setSuccessMessage(null);
+
+    if (mode === "register" && !isPasswordValid) {
+      setErrorMessage("Please ensure your password meets all complexity requirements below.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (mode === "register") {
+        if (!name.trim()) {
+          setErrorMessage("Please enter your name");
+          setIsLoading(false);
+          return;
+        }
+
+        const res = await authService.signup({
+          name: name.trim(),
+          email: email.trim(),
+          password,
+        });
+
+        if (res.success) {
+          // Reset fields and redirect to Login tab with success confirmation message
+          setPassword("");
+          setName("");
+          setMode("login");
+          setSuccessMessage("Account created successfully! Please sign in with your credentials.");
+        }
+      } else {
+        const res = await authService.login({
+          email: email.trim(),
+          password,
+        });
+
+        if (res.success && res.data) {
+          setAuth(res.data.user, res.data.token);
+          navigate("/dashboard");
+        }
+      }
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        setErrorMessage(err.response.data.message);
+      } else if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage("Authentication failed. Please check your credentials.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#090c1f] p-4 sm:p-8 font-['Plus_Jakarta_Sans',sans-serif]">
@@ -87,12 +139,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           {/* 3D-Styled Note & Pen Illustration matching screenshot */}
           <div className="relative z-10 py-12 flex items-center justify-center">
             <div className="relative w-64 h-64 flex items-center justify-center">
-              {/* Soft purple radial halo */}
               <div className="absolute inset-0 bg-[#5850ec]/20 rounded-full blur-2xl transform scale-90" />
 
-              {/* Note Pad Sheet */}
               <div className="relative w-48 h-56 bg-gradient-to-b from-white to-slate-50 rounded-2xl shadow-2xl transform -rotate-6 border border-white/20 p-5 flex flex-col justify-center space-y-3.5">
-                {/* Horizontal note lines */}
                 <div className="w-12 h-2.5 rounded-full bg-indigo-500/80" />
                 <div className="w-32 h-2 rounded-full bg-slate-200" />
                 <div className="w-36 h-2 rounded-full bg-slate-200" />
@@ -101,32 +150,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 <div className="w-20 h-2 rounded-full bg-indigo-400/60" />
               </div>
 
-              {/* 3D Purple Pencil / Stylus */}
               <div className="absolute -bottom-1 right-2 transform rotate-45 flex flex-col items-center drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)]">
-                {/* Pencil Tip */}
                 <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[14px] border-b-slate-800" />
-                {/* Pencil Body */}
                 <div className="w-4 h-20 bg-gradient-to-r from-purple-500 via-[#5850ec] to-indigo-600 rounded-t-sm" />
-                {/* Pencil Eraser */}
                 <div className="w-4 h-4 bg-slate-200 rounded-b-md" />
               </div>
             </div>
           </div>
 
-          {/* Footer note */}
           <div className="relative z-10 text-xs text-slate-500">
             &copy; 2026 NotesApp &bull; Built with React & Node.js
           </div>
         </div>
 
         {/* Right Side: Form Card */}
-        <div className="lg:w-1/2 bg-white p-8 sm:p-14 flex flex-col justify-between">
+        <div className="lg:w-1/2 bg-white p-8 sm:p-12 flex flex-col justify-between overflow-y-auto max-h-[85vh]">
           <div>
             {/* Top Navigation Tabs */}
-            <div className="flex items-center justify-end gap-8 mb-8 border-b border-slate-100 pb-3">
+            <div className="flex items-center justify-end gap-8 mb-6 border-b border-slate-100 pb-3">
               <button
                 type="button"
-                onClick={() => setMode("login")}
+                onClick={() => switchMode("login")}
                 className={cn(
                   "text-sm font-bold pb-2 transition-all relative",
                   mode === "login"
@@ -142,7 +186,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
               <button
                 type="button"
-                onClick={() => setMode("register")}
+                onClick={() => switchMode("register")}
                 className={cn(
                   "text-sm font-bold pb-2 transition-all relative",
                   mode === "register"
@@ -158,7 +202,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             </div>
 
             {/* Title & Subtitle */}
-            <div className="space-y-1.5 mb-8">
+            <div className="space-y-1.5 mb-5">
               <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
                 <span>{mode === "login" ? "Welcome Back" : "Create Account"}</span>
                 <span className="text-2xl">{mode === "login" ? "👋" : "🚀"}</span>
@@ -170,8 +214,24 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </p>
             </div>
 
+            {/* Success Message Alert */}
+            {successMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2.5 text-xs text-emerald-700 font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            {/* Error Message Alert */}
+            {errorMessage && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 flex items-center gap-2.5 text-xs text-red-600 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               {/* Full Name (in Register mode) */}
               {mode === "register" && (
                 <div className="relative">
@@ -225,6 +285,35 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </button>
               </div>
 
+              {/* Dynamic Password Criteria Indicators in Register Mode */}
+              {mode === "register" && password.length > 0 && (
+                <div className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-1.5 text-xs">
+                  <div className="font-semibold text-slate-600 mb-1">Password Requirements:</div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className={cn("flex items-center gap-1.5 font-medium transition-colors", hasMinLength ? "text-emerald-600" : "text-rose-500")}>
+                      {hasMinLength ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      <span>At least 8 chars</span>
+                    </div>
+                    <div className={cn("flex items-center gap-1.5 font-medium transition-colors", hasUpper ? "text-emerald-600" : "text-rose-500")}>
+                      {hasUpper ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      <span>Uppercase (A-Z)</span>
+                    </div>
+                    <div className={cn("flex items-center gap-1.5 font-medium transition-colors", hasLower ? "text-emerald-600" : "text-rose-500")}>
+                      {hasLower ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      <span>Lowercase (a-z)</span>
+                    </div>
+                    <div className={cn("flex items-center gap-1.5 font-medium transition-colors", hasNumber ? "text-emerald-600" : "text-rose-500")}>
+                      {hasNumber ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      <span>At least 1 number</span>
+                    </div>
+                    <div className={cn("flex items-center gap-1.5 font-medium transition-colors col-span-2", hasSpecial ? "text-emerald-600" : "text-rose-500")}>
+                      {hasSpecial ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                      <span>Special character (!@#$%^&*)</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Remember me & Forgot password (Login Mode) */}
               {mode === "login" && (
                 <div className="flex items-center justify-between text-xs pt-1">
@@ -242,7 +331,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                     href="#forgot"
                     onClick={(e) => {
                       e.preventDefault();
-                      window.alert("Password recovery is not available yet.");
+                      window.alert("Password recovery instructions would be emailed.");
                     }}
                     className="text-[#5850ec] hover:underline font-semibold"
                   >
@@ -254,15 +343,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 px-4 rounded-2xl bg-[#5850ec] hover:bg-[#4a42db] text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all disabled:opacity-70 mt-2"
+                disabled={isLoading || (mode === "register" && !isPasswordValid)}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#5850ec] hover:bg-[#4a42db] text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/25 active:scale-[0.99] transition-all disabled:opacity-60 disabled:cursor-not-allowed mt-2"
               >
-                <span>{isLoading ? "Signing in..." : mode === "login" ? "Login" : "Register"}</span>
+                <span>
+                  {isLoading
+                    ? mode === "login"
+                      ? "Signing in..."
+                      : "Registering..."
+                    : mode === "login"
+                    ? "Login"
+                    : "Register"}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
 
               {/* Divider: or */}
-              <div className="relative my-6 text-center">
+              <div className="relative my-4 text-center">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-slate-100" />
                 </div>
@@ -276,24 +373,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 type="button"
                 disabled={isLoading}
                 onClick={() => {
-                  if (pendingRef.current || isLoading) return;
-                  setAuth(
-                    {
-                      id: "google-user",
-                      name: "Ammara Zahid",
-                      email: "ammar@example.com",
-                      avatarUrl:
-                        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=250",
-                      memberSince: "Nov 10, 2025",
-                      status: "Active",
-                    },
-                    "google-jwt-token"
-                  );
-                  navigate("/dashboard");
+                  window.alert("Google OAuth will be connected with Google Cloud Console credentials.");
                 }}
                 className="w-full py-3 px-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2.5 hover:bg-slate-50 transition-colors shadow-sm"
               >
-                {/* Multi-colored Google SVG icon */}
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path
                     fill="#4285F4"
@@ -318,13 +401,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </div>
 
           {/* Footer toggle prompt */}
-          <div className="pt-6 text-center text-xs text-slate-500">
+          <div className="pt-4 text-center text-xs text-slate-500">
             {mode === "login" ? (
               <>
                 <span>Don&apos;t have an account? </span>
                 <button
                   type="button"
-                  onClick={() => setMode("register")}
+                  onClick={() => switchMode("register")}
                   className="text-[#5850ec] font-bold hover:underline"
                 >
                   Register
@@ -335,7 +418,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 <span>Already have an account? </span>
                 <button
                   type="button"
-                  onClick={() => setMode("login")}
+                  onClick={() => switchMode("login")}
                   className="text-[#5850ec] font-bold hover:underline"
                 >
                   Login
@@ -348,4 +431,3 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     </div>
   );
 };
-

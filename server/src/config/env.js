@@ -1,5 +1,13 @@
 // @ts-check
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure .env is loaded from server root regardless of where process is started
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 /** @typedef {"development" | "production" | "test" | (string & {})} NodeEnvironment */
 /**
@@ -15,8 +23,6 @@ import dotenv from "dotenv";
  * @property {boolean} isDevelopment
  * @property {boolean} isTest
  */
-
-dotenv.config();
 
 const requiredEnvVars = ["JWT_SECRET"];
 
