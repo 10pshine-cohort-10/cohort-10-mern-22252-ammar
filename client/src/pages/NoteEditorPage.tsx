@@ -37,6 +37,7 @@ export const NoteEditorPage: React.FC = () => {
   const [tags, setTags] = useState<string[]>(["Work", "Web Dev"]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(Boolean(id));
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const editor = useEditor({
     extensions: [
@@ -84,6 +85,7 @@ export const NoteEditorPage: React.FC = () => {
     if (!id) return;
     const fetchNote = async () => {
       try {
+        setLoadError(null);
         const res = await notesService.getNoteById(id);
         if (res.success && res.data) {
           setTitle(res.data.title);
@@ -95,10 +97,11 @@ export const NoteEditorPage: React.FC = () => {
         }
       } catch (err) {
         console.error("Failed to load note", err);
+        setLoadError("Failed to load note from server. To prevent data corruption, editing is disabled.");
         Swal.fire({
           icon: "error",
-          title: "Error",
-          text: "Could not load note from MongoDB",
+          title: "Load Failed",
+          text: "Could not load note from MongoDB. Please check connection and retry.",
         });
       } finally {
         setIsLoading(false);
@@ -196,6 +199,51 @@ export const NoteEditorPage: React.FC = () => {
         <div className="flex items-center gap-2.5">
           <div className="w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           <span>Loading note from MongoDB...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#f8faff] font-['Plus_Jakarta_Sans',sans-serif] flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center mx-auto text-xl font-bold">
+            !
+          </div>
+          <h2 className="text-lg font-bold text-slate-800">Note Could Not Be Loaded</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            {loadError}
+          </p>
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+              onClick={() => navigate("/notes")}
+              className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold hover:bg-slate-200 transition-colors"
+            >
+              Back to Notes
+            </button>
+            <button
+              onClick={() => {
+                setIsLoading(true);
+                setLoadError(null);
+                if (id) {
+                  notesService.getNoteById(id).then((res) => {
+                    if (res.success && res.data) {
+                      setTitle(res.data.title);
+                      setCategory(res.data.category || "Work");
+                      setTags(res.data.tags || []);
+                      if (editor) editor.commands.setContent(res.data.content);
+                    }
+                  }).catch(() => {
+                    setLoadError("Failed to load note from server.");
+                  }).finally(() => setIsLoading(false));
+                }
+              }}
+              className="px-4 py-2 rounded-xl bg-[#5850ec] text-white text-xs font-semibold hover:bg-[#4a42db] transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );

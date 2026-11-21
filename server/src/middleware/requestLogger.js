@@ -1,3 +1,4 @@
+// @ts-check
 import pinoHttp from "pino-http";
 import { logger } from "../config/logger.js";
 
@@ -6,11 +7,12 @@ import { logger } from "../config/logger.js";
  * Logs incoming HTTP requests and response status codes
  * Sanitizes sensitive fields like passwords, tokens, and authorization headers
  */
-export const requestLogger = pinoHttp({
+// @ts-ignore
+export const requestLogger = (pinoHttp.default || pinoHttp)({
   logger,
   autoLogging: true,
   serializers: {
-    req(req) {
+    req(/** @type {any} */ req) {
       return {
         id: req.id,
         method: req.method,
@@ -19,13 +21,13 @@ export const requestLogger = pinoHttp({
         remoteAddress: req.remoteAddress,
       };
     },
-    res(res) {
+    res(/** @type {any} */ res) {
       return {
         statusCode: res.statusCode,
       };
     },
   },
-  customLogLevel: function (req, res, err) {
+  customLogLevel: function (/** @type {any} */ req, /** @type {any} */ res, /** @type {any} */ err) {
     if (res.statusCode >= 500 || err) {
       return "error";
     }

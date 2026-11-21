@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import axios from "axios";
 import { LoginPage } from "./pages/LoginPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { NotesPage } from "./pages/NotesPage";
@@ -33,27 +34,46 @@ export const App: React.FC = () => {
   const { token, setAuth, logout, setLoading } = useAuthStore();
 
   useEffect(() => {
-    if (token) {
+    let isSubscribed = true;
+    const currentSessionToken = token;
+
+    if (currentSessionToken) {
       setLoading(true);
       authService
         .getCurrentUser()
         .then((res) => {
-          if (res.success && res.data) {
-            setAuth(res.data, token);
-          } else {
-            logout();
+          // Check that effect is still mounted and session hasn't changed
+          const activeToken = useAuthStore.getState().token;
+          if (isSubscribed && activeToken === currentSessionToken) {
+            if (res.success && res.data) {
+              setAuth(res.data, currentSessionToken);
+            } else {
+              logout();
+            }
           }
         })
-        .catch(() => {
-          // Keep existing local state if offline or token expired
-          logout();
+        .catch((error: unknown) => {
+          const activeToken = useAuthStore.getState().token;
+          if (isSubscribed && activeToken === currentSessionToken) {
+            // Only clear session if server explicitly returns 401 Unauthorized
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+              logout();
+            }
+            // In case of network errors or server downtime, retain existing stored credentials
+          }
         })
         .finally(() => {
-          setLoading(false);
+          if (isSubscribed) {
+            setLoading(false);
+          }
         });
     } else {
       setLoading(false);
     }
+
+    return () => {
+      isSubscribed = false;
+    };
   }, []);
 
   return (

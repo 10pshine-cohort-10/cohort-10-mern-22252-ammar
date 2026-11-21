@@ -1,3 +1,4 @@
+// @ts-check
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -5,19 +6,36 @@ import { User } from "../../models/User.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../config/logger.js";
 import { authenticate } from "../../middleware/authenticate.js";
+import { authLimiter } from "../../middleware/rateLimiter.js";
+
+/**
+ * @typedef {import("express").Request} Request
+ * @typedef {import("express").Response} Response
+ * @typedef {import("express").NextFunction} NextFunction
+ * @typedef {{ id: string, name: string, email: string, role?: string, avatarUrl?: string, status?: string }} UserPayload
+ * @typedef {Request & { user: any }} AuthenticatedRequest
+ */
 
 export const authRouter = express.Router();
 
+/**
+ * Helper to generate JWT Token
+ * @param {string | import("mongoose").Types.ObjectId} userId
+ * @returns {string}
+ */
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, env.JWT_SECRET, {
+  // @ts-ignore
+  return jwt.sign({ id: String(userId) }, env.JWT_SECRET, {
     expiresIn: env.JWT_EXPIRES_IN,
   });
 };
 
 /**
  * POST /api/v1/auth/signup
+ * Mount strict auth rate limiter specifically on signup
  */
-authRouter.post("/signup", async (req, res, next) => {
+authRouter.post("/signup", authLimiter, async (req, res, next) => {
+  /** @type {{ name?: string, email?: string, password?: string }} */
   const { name, email, password } = req.body;
 
   try {
@@ -96,8 +114,10 @@ authRouter.post("/signup", async (req, res, next) => {
 
 /**
  * POST /api/v1/auth/login
+ * Mount strict auth rate limiter specifically on login
  */
-authRouter.post("/login", async (req, res, next) => {
+authRouter.post("/login", authLimiter, async (req, res, next) => {
+  /** @type {{ email?: string, password?: string }} */
   const { email, password } = req.body;
 
   try {
@@ -167,11 +187,12 @@ authRouter.post("/login", async (req, res, next) => {
  * GET /api/v1/auth/me
  */
 authRouter.get("/me", authenticate, (req, res) => {
+  const authReq = /** @type {AuthenticatedRequest} */ (req);
   return res.status(200).json({
     success: true,
     statusCode: 200,
     message: "Current user profile fetched",
-    data: req.user,
+    data: authReq.user,
   });
 });
 
@@ -179,19 +200,22 @@ authRouter.get("/me", authenticate, (req, res) => {
  * PUT /api/v1/auth/profile
  */
 authRouter.put("/profile", authenticate, async (req, res, next) => {
+  const authReq = /** @type {AuthenticatedRequest} */ (req);
   try {
+    /** @type {{ name?: string, avatarUrl?: string }} */
     const { name, avatarUrl } = req.body;
+    /** @type {Record<string, any>} */
     const updateData = {};
     if (name) updateData.name = name.trim();
     if (typeof avatarUrl === "string") updateData.avatarUrl = avatarUrl.trim();
 
     const updatedUser = await User.findByIdAndUpdate(
-      req.user._id,
+      authReq.user._id,
       { $set: updateData },
       { new: true, runValidators: true }
     ).select("-password");
 
-    logger.info({ userId: req.user._id }, "User profile updated successfully");
+    logger.info({ userId: authReq.user._id }, "User profile updated successfully");
 
     return res.status(200).json({
       success: true,

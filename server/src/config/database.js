@@ -3,11 +3,17 @@ import mongoose from "mongoose";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
 
-// Ensure Node.js resolves MongoDB Atlas SRV records reliably across all Wi-Fi / ISP networks
-try {
-  dns.setServers(["8.8.8.8", "1.1.1.1"]);
-} catch (e) {
-  logger.warn("Could not set custom DNS servers: " + (e instanceof Error ? e.message : String(e)));
+// Optional custom DNS servers (set via CUSTOM_DNS in .env if ISP/router blocks SRV queries)
+if (process.env.CUSTOM_DNS) {
+  try {
+    const servers = process.env.CUSTOM_DNS.split(",").map((s) => s.trim()).filter(Boolean);
+    if (servers.length > 0) {
+      dns.setServers(servers);
+      logger.info(`Custom DNS servers configured: ${servers.join(", ")}`);
+    }
+  } catch (e) {
+    logger.warn("Could not set custom DNS servers: " + (e instanceof Error ? e.message : String(e)));
+  }
 }
 
 export const connectDatabase = async () => {
@@ -19,10 +25,8 @@ export const connectDatabase = async () => {
     return conn;
   } catch (error) {
     logger.error(`MongoDB Connection Error: ${error instanceof Error ? error.message : String(error)}`);
-    // If not connected, do not allow queries to hang silently for 10s
-    if (env.isProduction) {
-      process.exit(1);
-    }
+    // Rethrow to stop server startup when database connection cannot be established
+    throw error;
   }
 };
 

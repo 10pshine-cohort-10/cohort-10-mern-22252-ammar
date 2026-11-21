@@ -10,6 +10,7 @@ import {
   MoreVertical,
   Calendar,
   Trash2,
+  Edit,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -292,18 +293,21 @@ export const DashboardPage: React.FC = () => {
               {notes.map((note) => (
                 <div
                   key={note._id}
-                  onClick={() => navigate(`/editor/${note._id}`)}
-                  className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between space-y-4 relative group"
+                  className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative group"
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-slate-800 text-base line-clamp-1 group-hover:text-[#5850ec] transition-colors">
+                      <Link
+                        to={`/editor/${note._id}`}
+                        className="font-bold text-slate-800 text-base line-clamp-1 hover:text-[#5850ec] focus:outline-none focus:ring-2 focus:ring-[#5850ec]/30 rounded-lg transition-colors"
+                      >
                         {note.title}
-                      </h3>
+                      </Link>
 
                       <div className="relative">
                         <button
                           type="button"
+                          aria-label="Note actions"
                           onClick={(e) => {
                             e.stopPropagation();
                             setActiveMenuId(activeMenuId === note._id ? null : note._id);
@@ -318,6 +322,15 @@ export const DashboardPage: React.FC = () => {
                             onClick={(e) => e.stopPropagation()}
                             className="absolute right-0 top-7 w-36 bg-white rounded-2xl shadow-xl border border-slate-100 py-1.5 z-20 text-xs"
                           >
+                            <Link
+                              to={`/editor/${note._id}`}
+                              className="w-full text-left px-3 py-1.5 hover:bg-slate-50 flex items-center gap-2 text-slate-600"
+                              onClick={() => setActiveMenuId(null)}
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>Edit Note</span>
+                            </Link>
+
                             <button
                               onClick={(e) => {
                                 handleTogglePin(note, e);
