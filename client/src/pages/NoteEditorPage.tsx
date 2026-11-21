@@ -83,10 +83,12 @@ export const NoteEditorPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
+    let isCurrentRequest = true;
     const fetchNote = async () => {
       try {
         setLoadError(null);
         const res = await notesService.getNoteById(id);
+        if (!isCurrentRequest) return;
         if (res.success && res.data) {
           setTitle(res.data.title);
           setCategory(res.data.category || "Work");
@@ -96,6 +98,7 @@ export const NoteEditorPage: React.FC = () => {
           }
         }
       } catch (err) {
+        if (!isCurrentRequest) return;
         console.error("Failed to load note", err);
         setLoadError("Failed to load note from server. To prevent data corruption, editing is disabled.");
         Swal.fire({
@@ -104,12 +107,15 @@ export const NoteEditorPage: React.FC = () => {
           text: "Could not load note from MongoDB. Please check connection and retry.",
         });
       } finally {
-        setIsLoading(false);
+        if (isCurrentRequest) setIsLoading(false);
       }
     };
     if (editor) {
       fetchNote();
     }
+    return () => {
+      isCurrentRequest = false;
+    };
   }, [id, editor]);
 
   const handleAddTag = (e: React.KeyboardEvent) => {

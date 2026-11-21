@@ -1,4 +1,3 @@
-// @ts-nocheck
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
 import { User } from "../models/User.js";
@@ -8,6 +7,8 @@ import { logger } from "../config/logger.js";
  * @typedef {import("express").Request} Request
  * @typedef {import("express").Response} Response
  * @typedef {import("express").NextFunction} NextFunction
+ * @typedef {Request & { user: NonNullable<Awaited<ReturnType<typeof User.findById>>> }} AuthenticatedRequest
+ * @typedef {import("jsonwebtoken").JwtPayload & { id: string }} AuthenticatedTokenPayload
  */
 
 /**
@@ -37,7 +38,7 @@ export const authenticate = async (req, res, next) => {
     });
   }
 
-  /** @type {any} */
+  /** @type {string | import("jsonwebtoken").JwtPayload} */
   let decoded;
   try {
     decoded = jwt.verify(token, env.JWT_SECRET);
@@ -50,7 +51,7 @@ export const authenticate = async (req, res, next) => {
     });
   }
 
-  if (!decoded || typeof decoded !== "object" || !decoded.id) {
+  if (typeof decoded !== "object" || typeof decoded.id !== "string" || !decoded.id) {
     logger.warn({ ip: req.ip }, "Unauthorized access: Invalid token payload");
     return res.status(401).json({
       success: false,
@@ -60,9 +61,10 @@ export const authenticate = async (req, res, next) => {
   }
 
   try {
-    const user = await User.findById(decoded.id).select("-password");
+    const payload = /** @type {AuthenticatedTokenPayload} */ (decoded);
+    const user = await User.findById(payload.id).select("-password");
     if (!user) {
-      logger.warn({ userId: decoded.id }, "Unauthorized access: User no longer exists");
+      logger.warn({ userId: payload.id }, "Unauthorized access: User no longer exists");
       return res.status(401).json({
         success: false,
         statusCode: 401,
@@ -70,7 +72,7 @@ export const authenticate = async (req, res, next) => {
       });
     }
 
-    /** @type {any} */ (req).user = user;
+    /** @type {AuthenticatedRequest} */ (req).user = user;
     next();
   } catch (dbError) {
     logger.error({ err: dbError instanceof Error ? dbError.message : String(dbError) }, "Database error during authentication");
