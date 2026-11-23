@@ -5,7 +5,27 @@ export interface User {
   role?: string;
   avatarUrl?: string;
   memberSince?: string;
+  createdAt?: string;
   status?: string;
+}
+
+export interface Note {
+  _id: string;
+  userId: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  isPinned: boolean;
+  isArchived: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface NoteStats {
+  total: number;
+  pinned: number;
+  archived: number;
 }
 
 export interface AuthState {
@@ -19,6 +39,7 @@ export interface AuthState {
 
 export interface ApiResponse<T = unknown> {
   success: boolean;
+  statusCode?: number;
   message: string;
   data: T;
 }

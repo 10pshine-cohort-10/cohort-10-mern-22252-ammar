@@ -1,5 +1,13 @@
 // @ts-check
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Ensure .env is loaded from server root regardless of where process is started
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 /** @typedef {"development" | "production" | "test" | (string & {})} NodeEnvironment */
 /**
@@ -16,14 +24,9 @@ import dotenv from "dotenv";
  * @property {boolean} isTest
  */
 
-dotenv.config();
-
-const requiredEnvVars = ["JWT_SECRET"];
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.warn("[Config Warning]: Environment variable " + envVar + " is not defined. Using default fallback for development.");
-  }
+// Reject missing or blank JWT_SECRET before startup
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === "") {
+  throw new Error("Fatal: JWT_SECRET environment variable must be defined and non-empty.");
 }
 
 /** @type {NodeEnvironment} */
@@ -34,7 +37,7 @@ export const env = {
   PORT: parseInt(process.env.PORT || "5000", 10),
   NODE_ENV,
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/notes_app",
-  JWT_SECRET: process.env.JWT_SECRET || "fallback_dev_secret_replace_in_prod",
+  JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "1d",
   CLIENT_URL: process.env.CLIENT_URL || "http://localhost:5173",
   COOKIE_SECRET: process.env.COOKIE_SECRET || "fallback_dev_cookie_secret",

@@ -46,18 +46,81 @@
   }
 }
 
+/* TipTap Prose & List Styles */
+.tiptap {
+  outline: none;
+  min-height: 280px;
+}
+
+.tiptap p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.tiptap h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.tiptap ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tiptap ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.tiptap li {
+  margin-bottom: 0.25rem;
+  display: list-item !important;
+}
+
+.tiptap a {
+  color: #5850ec;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tiptap p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 /* Custom subtle scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 9999px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
