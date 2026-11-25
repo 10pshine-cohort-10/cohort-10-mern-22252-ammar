@@ -72,7 +72,8 @@ app.use((req, res) => {
 });
 
 // Global Error Handler
-app.use((err, req, res, next) => {
+/** @type {import("express").ErrorRequestHandler} */
+const errorHandler = (err, req, res, _next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   logger.error({ err, path: req.originalUrl, method: req.method }, `Error handling request: ${message}`);
@@ -82,6 +83,9 @@ app.use((err, req, res, next) => {
     message,
     ...(env.isDevelopment && { stack: err.stack }),
   });
-});
+  return;
+};
+
+app.use(errorHandler);
 
 export default app;
