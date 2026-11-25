@@ -1,4 +1,3 @@
-// @ts-check
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -9,12 +8,6 @@ import { generalLimiter } from "./middleware/rateLimiter.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { authRouter } from "./modules/auth/auth.routes.js";
 import { notesRouter } from "./modules/notes/notes.routes.js";
-
-/**
- * @typedef {import("express").Request} Request
- * @typedef {import("express").Response} Response
- * @typedef {import("express").NextFunction} NextFunction
- */
 
 export const app = express();
 
@@ -41,7 +34,7 @@ app.use(requestLogger);
 app.use(generalLimiter);
 
 // Health check endpoint
-app.get("/api/v1/health", (/** @type {Request} */ req, /** @type {Response} */ res) => {
+app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
     success: true,
     statusCode: 200,
@@ -56,7 +49,7 @@ app.get("/api/v1/health", (/** @type {Request} */ req, /** @type {Response} */ r
 });
 
 // Root API welcome
-app.get("/", (/** @type {Request} */ req, /** @type {Response} */ res) => {
+app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Notes App API is active",
@@ -70,7 +63,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/notes", notesRouter);
 
 // 404 handler
-app.use((/** @type {Request} */ req, /** @type {Response} */ res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     statusCode: 404,
@@ -79,7 +72,7 @@ app.use((/** @type {Request} */ req, /** @type {Response} */ res) => {
 });
 
 // Global Error Handler
-app.use((/** @type {any} */ err, /** @type {Request} */ req, /** @type {Response} */ res, /** @type {NextFunction} */ next) => {
+app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Internal Server Error";
   logger.error({ err, path: req.originalUrl, method: req.method }, `Error handling request: ${message}`);

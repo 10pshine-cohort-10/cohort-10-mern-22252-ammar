@@ -1,38 +1,19 @@
-// @ts-check
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const filename = fileURLToPath(import.meta.url);
+const dirname = path.dirname(filename);
 
-// Ensure .env is loaded from server root regardless of where process is started
-dotenv.config({ path: path.resolve(__dirname, "../../.env") });
+// Load .env from the server root, regardless of the process working directory.
+dotenv.config({ path: path.resolve(dirname, "../../.env") });
 
-/** @typedef {"development" | "production" | "test" | (string & {})} NodeEnvironment */
-/**
- * @typedef {object} EnvironmentConfig
- * @property {number} PORT
- * @property {NodeEnvironment} NODE_ENV
- * @property {string} MONGODB_URI
- * @property {string} JWT_SECRET
- * @property {string} JWT_EXPIRES_IN
- * @property {string} CLIENT_URL
- * @property {string} COOKIE_SECRET
- * @property {boolean} isProduction
- * @property {boolean} isDevelopment
- * @property {boolean} isTest
- */
-
-// Reject missing or blank JWT_SECRET before startup
-if (!process.env.JWT_SECRET || process.env.JWT_SECRET.trim() === "") {
+if (!process.env.JWT_SECRET?.trim()) {
   throw new Error("Fatal: JWT_SECRET environment variable must be defined and non-empty.");
 }
 
-/** @type {NodeEnvironment} */
 const NODE_ENV = (process.env.NODE_ENV || "development").toLowerCase();
 
-/** @type {EnvironmentConfig} */
 export const env = {
   PORT: parseInt(process.env.PORT || "5000", 10),
   NODE_ENV,
