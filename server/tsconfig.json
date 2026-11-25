@@ -4,7 +4,7 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "allowJs": true,
-    "checkJs": false,
+    "checkJs": true,
     "noEmit": true,
     "skipLibCheck": true,
     "types": [
@@ -13,7 +13,6 @@
     "strict": true
   },
   "include": [
-    "src/config/env.js",
-    "src/server.js"
+    "src/**/*"
   ]
 }
